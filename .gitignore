@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+backend/venv/
+venv/
+.venv/
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Databases & local environment
+*.db
+*.sqlite
+signal.db
+backend/signal.db
+.env
+.env.local
+.env.production
+
+# IDE & OS files
+.DS_Store
+.vscode/
+.idea/
