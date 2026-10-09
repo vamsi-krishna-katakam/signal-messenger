@@ -83,6 +83,19 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
     # 2. Register connection with ConnectionManager
     await manager.connect(user_id, websocket)
 
+    # 3. Broadcast live user:status online event to all connected users
+    all_connected_users = list(manager.active_connections.keys())
+    await manager.broadcast_to_users(
+        all_connected_users,
+        {
+            "type": "user:status",
+            "payload": {
+                "user_id": user_id,
+                "is_online": True,
+            },
+        },
+    )
+
     try:
         while True:
             # Receive raw text message from WebSocket client
@@ -243,3 +256,14 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
                     u.is_online = False
                     u.last_seen = datetime.now(timezone.utc)
                     db_session.commit()
+            all_remaining_users = list(manager.active_connections.keys())
+            await manager.broadcast_to_users(
+                all_remaining_users,
+                {
+                    "type": "user:status",
+                    "payload": {
+                        "user_id": user_id,
+                        "is_online": False,
+                    },
+                },
+            )

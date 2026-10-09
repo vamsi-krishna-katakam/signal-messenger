@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { api, User } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { useChat } from "@/context/ChatContext";
 import { getInitials } from "@/lib/utils";
 import { X, Users, Check } from "lucide-react";
@@ -11,6 +12,7 @@ interface NewGroupModalProps {
 }
 
 export default function NewGroupModal({ onClose }: NewGroupModalProps) {
+  const { user } = useAuth();
   const { createGroupChat } = useChat();
   const [title, setTitle] = useState("");
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
@@ -19,12 +21,12 @@ export default function NewGroupModal({ onClose }: NewGroupModalProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch demo contacts for selection
+    // Fetch contacts for selection (excluding creator user)
     api
       .getDemoUsers()
-      .then((users) => setAvailableUsers(users))
+      .then((users) => setAvailableUsers(users.filter((u) => u.id !== user?.id)))
       .catch((err) => console.error("Failed to load users for group creation:", err));
-  }, []);
+  }, [user]);
 
   const toggleSelectUser = (id: string) => {
     setSelectedUserIds((prev) =>
@@ -39,7 +41,7 @@ export default function NewGroupModal({ onClose }: NewGroupModalProps) {
       return;
     }
     if (selectedUserIds.length === 0) {
-      setError("Please select at least 1 member for the group");
+      setError("Please select at least 1 other member for the group");
       return;
     }
 
@@ -80,7 +82,7 @@ export default function NewGroupModal({ onClose }: NewGroupModalProps) {
             <label className="block text-xs font-semibold text-gray-400 mb-1">Group Name</label>
             <input
               type="text"
-              placeholder="e.g. Scalar SDE Team ⚡"
+              placeholder="e.g. Signal Engineering Team ⚡"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full bg-[#121212] border border-[#27272A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#2C6BED] outline-none"
@@ -89,9 +91,12 @@ export default function NewGroupModal({ onClose }: NewGroupModalProps) {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-2">
+            <label className="block text-xs font-semibold text-gray-400 mb-0.5">
               Select Group Members ({selectedUserIds.length} selected)
             </label>
+            <p className="text-[11px] text-emerald-400 font-medium mb-2">
+              ✓ You ({user?.display_name || "Creator"}) are added automatically as group admin.
+            </p>
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {availableUsers.map((u) => {
                 const isSelected = selectedUserIds.includes(u.id);

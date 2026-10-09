@@ -185,6 +185,34 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           );
         }
       }
+
+      // EVENT: Real-time User Online/Offline Status Change
+      else if (type === "user:status") {
+        const { user_id, is_online } = payload;
+
+        // Update conversation participant online status in sidebar list
+        setConversations((prevConvs) =>
+          prevConvs.map((conv) => {
+            const updatedParticipants = conv.participants.map((p) =>
+              p.user_id === user_id
+                ? { ...p, user: { ...p.user, is_online } }
+                : p
+            );
+            return { ...conv, participants: updatedParticipants };
+          })
+        );
+
+        // Update active conversation participant online status
+        setActiveConversation((prevActive) => {
+          if (!prevActive) return null;
+          const updatedParticipants = prevActive.participants.map((p) =>
+            p.user_id === user_id
+              ? { ...p, user: { ...p.user, is_online } }
+              : p
+          );
+          return { ...prevActive, participants: updatedParticipants };
+        });
+      }
     });
 
     return () => unsubscribe();

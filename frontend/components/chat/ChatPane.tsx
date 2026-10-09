@@ -166,9 +166,9 @@ export default function ChatPane() {
             const isDelivered = msg.receipts.some((r) => r.status === "delivered");
 
             if (isRead) {
-              receiptIcon = <CheckCheck className="w-4 h-4 text-[#00E5FF] font-bold" title="Read" />;
+              receiptIcon = <CheckCheck className="w-4 h-4 text-[#00E5FF] font-bold" />;
             } else if (isDelivered) {
-              receiptIcon = <CheckCheck className="w-3.5 h-3.5 text-white/90" title="Delivered" />;
+              receiptIcon = <CheckCheck className="w-3.5 h-3.5 text-white/90" />;
             }
 
             return (
