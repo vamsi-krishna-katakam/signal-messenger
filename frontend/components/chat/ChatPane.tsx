@@ -171,6 +171,8 @@ export default function ChatPane() {
               receiptIcon = <CheckCheck className="w-3.5 h-3.5 text-white/90" />;
             }
 
+            const isSystemMessage = msg.text.startsWith("📌");
+
             return (
               <React.Fragment key={msg.id}>
                 {/* Date Divider Pill */}
@@ -182,55 +184,64 @@ export default function ChatPane() {
                   </div>
                 )}
 
-                {/* Message Bubble */}
-                <div
-                  className={`flex items-end gap-2 ${
-                    isMe ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  {/* Sender Avatar for Group Messages */}
-                  {!isMe && activeConversation.type === "group" && (
-                    msg.sender?.avatar_url ? (
-                      <img
-                        src={msg.sender.avatar_url}
-                        alt={msg.sender?.display_name || "User"}
-                        className="w-7 h-7 rounded-full object-cover mb-1 flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-[#2C6BED] text-white flex items-center justify-center font-semibold text-[10px] mb-1 flex-shrink-0">
-                        {getInitials(msg.sender?.display_name || "")}
-                      </div>
-                    )
-                  )}
-
+                {/* System Event Message Pill Badge */}
+                {isSystemMessage ? (
+                  <div className="flex justify-center my-2 select-none">
+                    <span className="bg-[#1E1E22]/90 text-gray-300 border border-[#27272A] text-[11px] font-medium px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1.5">
+                      {msg.text}
+                    </span>
+                  </div>
+                ) : (
+                  /* Regular Message Bubble */
                   <div
-                    className={`max-w-[75%] md:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-sm text-sm break-words relative ${
-                      isMe
-                        ? "bg-[#2C6BED] text-white rounded-br-none"
-                        : "bg-[#2E3035] text-white rounded-bl-none border border-[#3B3E46]"
+                    className={`flex items-end gap-2 ${
+                      isMe ? "justify-end" : "justify-start"
                     }`}
                   >
-                    {/* Sender Name in Group */}
+                    {/* Sender Avatar for Group Messages */}
                     {!isMe && activeConversation.type === "group" && (
-                      <div className="text-[11px] font-semibold text-emerald-400 mb-0.5">
-                        {msg.sender?.display_name}
-                      </div>
+                      msg.sender?.avatar_url ? (
+                        <img
+                          src={msg.sender.avatar_url}
+                          alt={msg.sender?.display_name || "User"}
+                          className="w-7 h-7 rounded-full object-cover mb-1 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-[#2C6BED] text-white flex items-center justify-center font-semibold text-[10px] mb-1 flex-shrink-0">
+                          {getInitials(msg.sender?.display_name || "")}
+                        </div>
+                      )
                     )}
 
-                    {/* Message Text */}
-                    <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
-
-                    {/* Timestamp & Status Checkmark */}
                     <div
-                      className={`flex items-center gap-1 justify-end mt-1 text-[10px] ${
-                        isMe ? "text-blue-100" : "text-gray-400"
+                      className={`max-w-[75%] md:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-sm text-sm break-words relative ${
+                        isMe
+                          ? "bg-[#2C6BED] text-white rounded-br-none"
+                          : "bg-[#2E3035] text-white rounded-bl-none border border-[#3B3E46]"
                       }`}
                     >
-                      <span>{formatTime(msg.created_at)}</span>
-                      {isMe && <span>{receiptIcon}</span>}
+                      {/* Sender Name in Group */}
+                      {!isMe && activeConversation.type === "group" && (
+                        <div className="text-[11px] font-semibold text-emerald-400 mb-0.5">
+                          {msg.sender?.display_name}
+                        </div>
+                      )}
+
+                      {/* Message Text */}
+                      <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+
+                      {/* Timestamp & Status Checkmark */}
+                      <div
+                        className={`flex items-center gap-1 justify-end mt-1 text-[10px] ${
+                          isMe ? "text-blue-100" : "text-gray-400"
+                        }`}
+                      >
+                        <span>{formatTime(msg.created_at)}</span>
+                        {isMe && <span>{receiptIcon}</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </React.Fragment>
             );
           })

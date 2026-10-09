@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import User, Conversation, ConversationParticipant
+from models import User, Conversation, ConversationParticipant, Message, MessageReceipt
 from schemas import GroupCreateRequest, GroupMemberAddRequest, ConversationResponse
 from routers.conversations_router import format_conversation_response
 from auth import get_current_user
@@ -55,6 +55,29 @@ def create_group(
 
     db.add_all(participants)
     db.commit()
+
+    # Create system notification message for group creation
+    sys_msg = Message(
+        conversation_id=new_group.id,
+        sender_id=current_user.id,
+        text=f"📌 {current_user.display_name} created group \"{new_group.title}\"",
+        created_at=now,
+    )
+    db.add(sys_msg)
+    db.commit()
+    db.refresh(sys_msg)
+
+    receipts = [
+        MessageReceipt(
+            message_id=sys_msg.id,
+            user_id=p.user_id,
+            status="read" if p.user_id == current_user.id else "delivered",
+        )
+        for p in participants
+    ]
+    db.add_all(receipts)
+    db.commit()
+
     db.refresh(new_group)
 
     return format_conversation_response(new_group, current_user.id, db)
@@ -92,6 +115,7 @@ def add_group_members(
     existing_part_user_ids = {p.user_id for p in group.participants}
 
     new_parts = []
+    added_names = []
     for uid in request.user_ids:
         if uid not in existing_part_user_ids:
             user = db.query(User).filter(User.id == uid).first()
@@ -101,11 +125,36 @@ def add_group_members(
                         conversation_id=group_id, user_id=uid, role="member", joined_at=now
                     )
                 )
+                added_names.append(user.display_name)
 
     if new_parts:
         group.updated_at = now
         db.add_all(new_parts)
         db.commit()
+
+        # Add system notification message
+        names_str = ", ".join(added_names)
+        sys_msg = Message(
+            conversation_id=group.id,
+            sender_id=current_user.id,
+            text=f"📌 {current_user.display_name} added {names_str} to the group",
+            created_at=now,
+        )
+        db.add(sys_msg)
+        db.commit()
+        db.refresh(sys_msg)
+
+        receipts = [
+            MessageReceipt(
+                message_id=sys_msg.id,
+                user_id=p.user_id,
+                status="read" if p.user_id == current_user.id else "delivered",
+            )
+            for p in group.participants
+        ]
+        db.add_all(receipts)
+        db.commit()
+
         db.refresh(group)
 
     return format_conversation_response(group, current_user.id, db)
@@ -155,10 +204,39 @@ def remove_group_member(
     if not target_part:
         raise HTTPException(status_code=404, detail="Member not found in group")
 
+    target_name = target_part.user.display_name if target_part.user else "A member"
+    if current_user.id == target_user_id:
+        sys_text = f"📌 {target_name} left the group"
+    else:
+        sys_text = f"📌 {current_user.display_name} removed {target_name} from the group"
+
     now = datetime.now(timezone.utc)
     group.updated_at = now
     db.delete(target_part)
     db.commit()
+
+    sys_msg = Message(
+        conversation_id=group.id,
+        sender_id=current_user.id,
+        text=sys_text,
+        created_at=now,
+    )
+    db.add(sys_msg)
+    db.commit()
+    db.refresh(sys_msg)
+
+    receipts = [
+        MessageReceipt(
+            message_id=sys_msg.id,
+            user_id=p.user_id,
+            status="read" if p.user_id == current_user.id else "delivered",
+        )
+        for p in group.participants
+    ]
+    db.add_all(receipts)
+    db.commit()
+
     db.refresh(group)
 
     return format_conversation_response(group, current_user.id, db)
+
