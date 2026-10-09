@@ -161,14 +161,14 @@ export default function ChatPane() {
                 formatDateSeparator(prevMsg.created_at);
 
             // Compute receipt checkmark status for sent messages
-            let receiptIcon = <Check className="w-3.5 h-3.5 text-gray-400" />;
+            let receiptIcon = <Check className="w-3.5 h-3.5 text-blue-200/80" />;
             const isRead = msg.receipts.some((r) => r.status === "read");
             const isDelivered = msg.receipts.some((r) => r.status === "delivered");
 
             if (isRead) {
-              receiptIcon = <CheckCheck className="w-3.5 h-3.5 text-blue-400" />;
+              receiptIcon = <CheckCheck className="w-4 h-4 text-[#00E5FF] font-bold" title="Read" />;
             } else if (isDelivered) {
-              receiptIcon = <CheckCheck className="w-3.5 h-3.5 text-gray-400" />;
+              receiptIcon = <CheckCheck className="w-3.5 h-3.5 text-white/90" title="Delivered" />;
             }
 
             return (
