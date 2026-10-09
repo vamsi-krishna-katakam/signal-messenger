@@ -1,79 +1,80 @@
-# Signal Clone — Final Architecture & Implementation Plan
-
-> **Final Update**: 
-> 1. Removed all encryption/security banners (`SignalSecurityBanner.tsx` omitted). E2EE is documented in README as outside assignment scope.
-> 2. Enforced **Code Simplicity & Explainability Guidelines**: simple, readable, non-abstract FastAPI + SQLAlchemy + Next.js code that can be easily explained line-by-line during the interview.
+# 🚀 Signal Messenger Clone — Complete Architecture, System Design & Feature Plan
 
 ---
 
-## 1. Core Requirements & Verification Matrix
+## 📌 Executive Overview
 
-| Category | Requirement | Status / Approach |
-| :--- | :--- | :--- |
-| **Auth & Onboarding** | Mocked OTP Login / Register (`123456` OTP) | 1-click preset logins + manual phone/username auth |
-| | Profile setup (Display name, avatar picker, bio) | Stored in SQLite `users` table |
-| | Session persistence & Logout | JWT token stored in localStorage + HTTP headers |
-| **Contacts & Chat List**| Left sidebar conversation list | Sorted by `updated_at`, last message snippet, timestamp, unread badge |
-| | Contact Search & Add Contact | Search by phone/username, instant contact addition |
-| | Online / Last Seen Indicators | Real-time WebSocket presence updates |
-| **1-on-1 Messaging** | Real-time direct text messaging | FastAPI WebSockets + SQLite persistence |
-| | Delivery & Read Receipts | ⌛ Sending -> ✓ Sent -> ✓✓ Delivered -> 🔵 Read state tracking |
-| | Typing Indicators | Live `typing:start` / `typing:stop` event broadcast |
-| | Timestamps & Date Separators | Standardized human-formatted timestamps ("Today", "Yesterday", 12h time) |
-| **Group Messaging** | Create Group (Name, Avatar, Select Members) | Simple modals for creation & member management |
-| | Group Member View & Admin Controls | Add/remove members, admin roles |
-| | Group Chat Messaging | Real-time broadcasting to all active group members |
-| **Signal UI / UX** | Visually convincing Signal-inspired UI/UX | Clean Signal dark theme (`#121212`, `#1E1E22`, `#2C6BED`) |
-| | Security Banner | **Omitted completely** (Explained in README) |
-| **Testing Protocol** | Multi-browser simultaneous WebSocket testing | Dual-browser automated/manual verification (Alice & Bob) |
-| **Bonus Features (Deferred)**| Attachments, Reactions, Quoted Replies, Disappearing Messages, Shortcuts | **Deferred until ALL core features are 100% complete and verified** |
+This application is a **full-stack, real-time Signal Messenger clone** engineered with **FastAPI (Python)** on the backend, **Next.js 14 / React (TypeScript)** on the frontend, **WebSockets** for instant real-time event broadcasting, and **PostgreSQL / SQLite** with SQLAlchemy ORM for data persistence.
 
 ---
 
-## 2. Clean & Explainable Architecture
+## 📑 Table of Contents
+1. [Core Features & System Implementation Status](#1-core-features--system-implementation-status)
+2. [End-to-End System Architecture & Data Flow](#2-end-to-end-system-architecture--data-flow)
+3. [Database Schema & Table Relationships](#3-database-schema--table-relationships)
+4. [Group Messaging & Member Controls Architecture](#4-group-messaging--member-controls-architecture)
+5. [System Event Messages & User Message Safeguards](#5-system-event-messages--user-message-safeguards)
+6. [Real-Time WebSocket Protocol & Event Matrix](#6-real-time-websocket-protocol--event-matrix)
+7. [Cloud Deployment & Verification Matrix](#7-cloud-deployment--verification-matrix)
+8. [Interview Walkthrough Guide (How to Explain the App)](#8-interview-walkthrough-guide-how-to-explain-the-app)
+
+---
+
+## 1. Core Features & System Implementation Status
+
+| Feature | Detailed Description | Implementation Status |
+| :--- | :--- | :---: |
+| **Authentication & Onboarding** | OTP-based authentication (`123456`), 1-click Quick Login presets (Alice, Bob, Charlie, Diana), JWT token authentication stored in `localStorage`. | ✅ Completed |
+| **Contacts & Direct Messaging** | 1-on-1 real-time direct chats, live contact search, contact add/nickname support. | ✅ Completed |
+| **Message Receipts & Read Tracking** | 3-stage delivery receipts: `⌛ Sending` ➔ `✓ Sent` ➔ `✓✓ Delivered` ➔ `🔵` Electric Cyan (`#00E5FF`) Read Receipts. | ✅ Completed |
+| **Live Typing Indicators** | WebSockets broadcast `typing:start` and `typing:stop` events live across active chat participants. | ✅ Completed |
+| **Real-Time Online Presence** | Instant `user:status` events broadcast user online/offline status live over WebSockets across browsers without needing page reloads. | ✅ Completed |
+| **Group Creation & Admin Setup** | Users can create custom named groups. Creator is automatically assigned as **Group Admin** and excluded from member picker. | ✅ Completed |
+| **Group Member Controls** | Admins can view group members, **Add Members** from contacts, and **Remove Members** (kick out). Members can view and leave groups. | ✅ Completed |
+| **Group System Event Messages** | Automatic system notifications (`📌`) generated and formatted as centered pill badges when groups are created, members added, removed, or leave. | ✅ Completed |
+| **System Event vs User Message Safeguard** | Backend flags system events with `is_system: true` metadata tag so normal user messages starting with `📌` are never misclassified. | ✅ Completed |
+| **Cloud Deployment** | Backend + PostgreSQL database running on Railway; Frontend deployed on Vercel; synced with GitHub repository. | ✅ Completed |
+
+---
+
+## 2. End-to-End System Architecture & Data Flow
 
 ```
-ScalarLabs/
-├── backend/
-│   ├── main.py                  # FastAPI app entry point, CORS, REST & WS router mounts
-│   ├── database.py              # SQLite connection setup (SQLAlchemy Session & Base)
-│   ├── models.py                # Plain ORM models (User, Contact, Conversation, Participant, Message, Receipt)
-│   ├── schemas.py               # Pydantic schemas for request/response bodies
-│   ├── auth.py                  # Simple JWT creation, verification & password hash helpers
-│   ├── websocket_manager.py     # ConnectionManager dict mapping user_id -> List[WebSocket]
-│   ├── seed.py                  # Simple script to seed demo users (Alice, Bob, Charlie, Diana) & active chats
-│   └── routers/
-│       ├── auth_router.py       # Login & Register REST endpoints
-│       ├── users_router.py      # Users search & profile edit
-│       ├── contacts_router.py   # List contacts & Add contact
-│       ├── conversations_router.py # List chats & create 1-on-1 / group chats
-│       ├── messages_router.py   # Fetch message history
-│       └── groups_router.py     # Add/remove group members
-│
-├── frontend/
-│   ├── app/                     # Next.js App Router
-│   │   ├── page.tsx             # Main Signal Chat dashboard layout
-│   │   ├── login/page.tsx       # Auth page with 1-click Quick Login buttons
-│   │   ├── layout.tsx           # Global layout & fonts
-│   │   └── globals.css          # Tailwind & Signal dark theme colors (`#121212`, `#1E1E22`, `#2C6BED`)
-│   ├── components/
-│   │   ├── sidebar/             # Sidebar header, search input, conversation list items
-│   │   ├── chat/                # Active chat header, message thread view, input composer
-│   │   └── modals/              # New Chat, New Group, Group Admin Details, Settings
-│   ├── context/
-│   │   ├── AuthContext.tsx      # Auth user state & JWT token helper
-│   │   ├── WebSocketContext.tsx # Central WebSocket connection & message listener hub
-│   │   └── ChatContext.tsx       # Active chat state, messages list, typing indicators map
-│   └── lib/
-│       ├── api.ts               # Simple fetch API wrapper with Authorization headers
-│       └── utils.ts             # Time formatters ("Today", "10:45 AM") & user avatar initials helper
-│
-└── README.md                    # Setup guide, Architecture overview, Database schema, API reference
++-------------------------------------------------------------------------+
+|                              FRONTEND                                   |
+|                  Next.js 14 + Tailwind CSS + WebSockets                 |
+|                                                                         |
+|   +-------------------+    +---------------------+    +-------------+   |
+|   |   AuthContext     |    |   WebSocketContext  |    | ChatContext |   |
+|   | (JWT / User State)|    |  (Live Event Hub)   |    | (Active Chat|   |
+|   +---------+---------+    +----------+----------+    +------+------+   |
++-------------|-------------------------|----------------------|----------+
+              | REST (HTTPS)            | WebSocket (WSS)      | REST (HTTPS)
+              v                         v                      v
++-------------------------------------------------------------------------+
+|                              BACKEND                                    |
+|                   FastAPI + Uvicorn + SQLAlchemy                        |
+|                                                                         |
+|   +-------------------+    +---------------------+    +-------------+   |
+|   |   Auth Router     |    | Connection Manager  |    | REST Routers|   |
+|   | (/api/auth)       |    | (/ws?token=...)     |    | (Groups/Msg)|   |
+|   +---------+---------+    +----------+----------+    +------+------+   |
++-------------|-------------------------|----------------------|----------+
+              |                         |                      |
+              +-------------------------+----------------------+
+                                        |
+                                        v
++-------------------------------------------------------------------------+
+|                              DATABASE                                   |
+|                     PostgreSQL (Railway) / SQLite                       |
+|   Tables: users, contacts, conversations, conversation_participants,     |
+|           messages, message_receipts                                    |
++-------------------------------------------------------------------------+
 ```
 
 ---
 
-## 3. SQLite Relational Database Schema
+## 3. Database Schema & Table Relationships
 
 ```mermaid
 erDiagram
@@ -133,24 +134,102 @@ erDiagram
     }
 ```
 
+### Table Details & Relationship Explanation:
+
+1. **`users` Table**:
+   * Stores user credentials, profile attributes (`display_name`, `avatar_url`, `bio`), and real-time status (`is_online`, `last_seen`).
+2. **`conversations` Table**:
+   * Holds both 1-on-1 direct chats (`type="direct"`) and multi-user group chats (`type="group"`).
+   * Group chats have `title`, `avatar_url`, and `created_by_id` referencing the creator user.
+3. **`conversation_participants` Table** (Junction Table):
+   * Connects `users` to `conversations`.
+   * Tracks user roles (`admin` or `member`), `joined_at` timestamps, and `last_read_message_id`.
+4. **`messages` Table**:
+   * Stores message text, sender reference (`sender_id`), conversation reference (`conversation_id`), and timestamp.
+   * Also stores **System Notification Messages** (e.g. `📌 Alice added Bob to the group`).
+5. **`message_receipts` Table**:
+   * Tracks per-recipient message delivery and read status (`sent`, `delivered`, `read`).
+
 ---
 
-## 4. 17-Step Core-First Implementation Order
+## 4. Group Messaging & Member Controls Architecture
 
-1. **Step 1: Project Setup**: Create `backend/` and `frontend/` workspaces, install FastAPI, SQLAlchemy, Uvicorn, Next.js, Tailwind CSS, Lucide icons.
-2. **Step 2: SQLite Database & Models**: Write `database.py` and `models.py` for Users, Contacts, Conversations, Participants, Messages, Receipts.
-3. **Step 3: Authentication & Session**: Write `auth.py` and `auth_router.py` for mocked OTP verification (`123456`), password hashing, and JWT token issue.
-4. **Step 4: Seed Users & Demo Data**: Write `seed.py` to populate 4 demo accounts (**Alice**, **Bob**, **Charlie**, **Diana**), contacts, and active 1-on-1 & group chats.
-5. **Step 5: REST APIs**: Build simple endpoints for fetching conversations, user search, adding contacts, fetching message history.
-6. **Step 6: WebSocket Infrastructure**: Create `websocket_manager.py` with `ConnectionManager` class to broadcast messages by user connection mapping.
-7. **Step 7: 1-on-1 Real-Time Messaging**: Connect frontend `WebSocketContext` with backend `/ws?token=...` endpoint for live text messaging.
-8. **Step 8: Message Status & Typing Indicators**: Implement live checkmarks (`sending` ➔ `sent` ➔ `delivered` ➔ `read`) and `is typing...` status broadcast.
-9. **Step 9: Conversation List & Search**: Wire left sidebar list, active search input, unread count badges, and recent message snippets.
-10. **Step 10: Group Creation & Messaging**: Build New Group modal, group message broadcasting, and member view.
-11. **Step 11: Group Member Management**: Build Admin controls to add and remove group members in real time.
-12. **Step 12: Signal UI Refinement**: Apply Signal dark mode theme (`#121212`, `#1E1E22`, `#2C6BED`), rounded chat bubbles, header toolbar.
-13. **Step 13: Dual-Browser Real-Time Testing**: Launch Alice in Browser 1 and Bob in Browser 2. Test live messaging, receipts, typing indicators, and group updates.
-14. **Step 14: Bug Fixing & Edge Cases**: Handle empty states, loading indicators, WS reconnection handling, input validation.
-15. **Step 15: Comprehensive README**: Document architecture, setup commands, schema, API endpoints, and design decisions for evaluation.
-16. **Step 16: Deployment Preparation**: Ensure local dev servers run smoothly with `npm run dev` and `uvicorn main:app --reload`.
-17. **Step 17: Optional Bonus Features**: Consider optional attachments/reactions/quoted replies if time permits.
+### Group Lifecycle & Actions:
+
+1. **Group Creation (`POST /api/groups/create`)**:
+   * Client sends group `title` and array of selected `member_user_ids`.
+   * Creator is automatically assigned `role="admin"` in `conversation_participants`.
+   * System generates initial event message: `📌 <Creator> created group "<Title>"`.
+
+2. **Add Group Members (`POST /api/groups/{id}/members`)**:
+   * Authorized by group membership check.
+   * Appends new rows to `conversation_participants` with `role="member"`.
+   * System generates notification message: `📌 <Admin> added <Member1, Member2> to the group`.
+
+3. **Remove Group Member (`DELETE /api/groups/{id}/members/{user_id}`)**:
+   * Role enforcement: Non-admins can only remove themselves (leave group); admins can remove any member.
+   * Deletes target user's row from `conversation_participants`.
+   * System generates notification message:
+     * If self-leave: `📌 <User> left the group`
+     * If admin kick: `📌 <Admin> removed <User> from the group`
+
+---
+
+## 5. System Event Messages & User Message Safeguards
+
+### How System Messages are Distinguished from User Messages:
+
+* **Backend Metadata Flag (`is_system: bool`)**:
+  System events generated by the backend API are marked with `is_system: true`.
+* **User Messages (`is_system: false`)**:
+  If a regular user types a chat message starting with `📌` (e.g. `"📌 Here is the link"`), it is sent with `is_system: false`.
+* **Frontend Rendering Logic (`ChatPane.tsx`)**:
+  ```tsx
+  const isSystemMessage = Boolean(msg.is_system);
+
+  if (isSystemMessage) {
+    // Render as centered system notification pill badge
+  } else {
+    // Render as normal left/right user chat bubble
+  }
+  ```
+
+---
+
+## 6. Real-Time WebSocket Protocol & Event Matrix
+
+| Event Type | Payload Data | Direction | System Action |
+| :--- | :--- | :--- | :--- |
+| `message:send` | `{ conversation_id, text }` | Client ➔ Server | Persists message & receipts in DB; broadcasts `message:new` to online participants. |
+| `message:new` | Message object with sender info & receipts | Server ➔ Clients | Appends message to active chat thread; updates sidebar last message snippet & unread count. |
+| `message:read` | `{ conversation_id, message_ids }` | Client ➔ Server | Updates `message_receipts` status to `read`; broadcasts `receipt:update` to senders. |
+| `typing:start` | `{ conversation_id }` | Client ➔ Server | Broadcasts typing state to other participants in the conversation. |
+| `typing:stop` | `{ conversation_id }` | Client ➔ Server | Clears typing indicator for the active user. |
+| `user:status` | `{ user_id, is_online, last_seen }` | Server ➔ Clients | Broadcasted on socket connect/disconnect; updates live green online status dot immediately. |
+
+---
+
+## 7. Cloud Deployment & Verification Matrix
+
+* **GitHub Repository**: [vamsi-krishna-katakam/signal-messenger](https://github.com/vamsi-krishna-katakam/signal-messenger.git)
+* **Backend Deployment**: Railway (`https://signal-messenger-production.up.railway.app`)
+* **Database Deployment**: PostgreSQL instance hosted on Railway
+* **Frontend Deployment**: Vercel (`NEXT_PUBLIC_API_URL` pointing to Railway production server)
+
+---
+
+## 8. Interview Walkthrough Guide (How to Explain the App)
+
+When presenting this project to interviewers or evaluators, follow this 4-step sequence:
+
+1. **Architecture & Tech Stack Summary**:
+   > *"I built a Signal Messenger clone using Next.js on the frontend and FastAPI on the backend, using WebSockets for bidirectional real-time communication and PostgreSQL for persistence."*
+
+2. **Real-Time Data Pipeline**:
+   > *"When a user logs in, a persistent WebSocket connection is established using a JWT token. When a message is typed, a `typing:start` event is emitted. When sent, the server saves the message and receipt models to PostgreSQL and broadcasts `message:new` to all online participants instantly."*
+
+3. **Group Admin Controls & System Events**:
+   > *"Groups support role-based access. Group creators are automatically assigned as Admins. Admins can view members, add new contacts, or remove existing members. Whenever a member is added, removed, or leaves, the system automatically inserts a system event message (`📌`) tagged with `is_system: true` that renders as a centered pill badge in the UI."*
+
+4. **Performance & Scalability Considerations**:
+   > *"To avoid connection pool starvation on WebSockets, DB sessions are scoped per event execution using `with SessionLocal() as db:`, keeping pooled connections lightweight and scale-ready."*
