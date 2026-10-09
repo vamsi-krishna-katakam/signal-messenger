@@ -86,6 +86,7 @@ class MessageResponse(BaseModel):
     sender: UserResponse
     text: str
     created_at: datetime
+    is_system: bool = False
     receipts: List[MessageReceiptResponse] = []
 
     class Config:

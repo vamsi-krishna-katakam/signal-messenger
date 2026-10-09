@@ -46,14 +46,17 @@ def get_messages(
             MessageReceiptResponse(user_id=r.user_id, status=r.status, updated_at=r.updated_at)
             for r in msg.receipts
         ]
+        is_sys = msg.text.startswith("[SYS]")
+        clean_text = msg.text.replace("[SYS]", "").strip() if is_sys else msg.text
         result.append(
             MessageResponse(
                 id=msg.id,
                 conversation_id=msg.conversation_id,
                 sender_id=msg.sender_id,
                 sender=sender_resp,
-                text=msg.text,
+                text=clean_text,
                 created_at=msg.created_at,
+                is_system=is_sys,
                 receipts=receipt_resps,
             )
         )

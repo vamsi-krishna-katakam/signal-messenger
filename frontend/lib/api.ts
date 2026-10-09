@@ -24,6 +24,7 @@ export interface Message {
   sender: User;
   text: string;
   created_at: string;
+  is_system?: boolean;
   receipts: MessageReceipt[];
 }
 

@@ -60,7 +60,7 @@ def create_group(
     sys_msg = Message(
         conversation_id=new_group.id,
         sender_id=current_user.id,
-        text=f"📌 {current_user.display_name} created group \"{new_group.title}\"",
+        text=f"[SYS] 📌 {current_user.display_name} created group \"{new_group.title}\"",
         created_at=now,
     )
     db.add(sys_msg)
@@ -137,7 +137,7 @@ def add_group_members(
         sys_msg = Message(
             conversation_id=group.id,
             sender_id=current_user.id,
-            text=f"📌 {current_user.display_name} added {names_str} to the group",
+            text=f"[SYS] 📌 {current_user.display_name} added {names_str} to the group",
             created_at=now,
         )
         db.add(sys_msg)
@@ -206,9 +206,9 @@ def remove_group_member(
 
     target_name = target_part.user.display_name if target_part.user else "A member"
     if current_user.id == target_user_id:
-        sys_text = f"📌 {target_name} left the group"
+        sys_text = f"[SYS] 📌 {target_name} left the group"
     else:
-        sys_text = f"📌 {current_user.display_name} removed {target_name} from the group"
+        sys_text = f"[SYS] 📌 {current_user.display_name} removed {target_name} from the group"
 
     now = datetime.now(timezone.utc)
     group.updated_at = now
