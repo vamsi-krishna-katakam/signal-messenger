@@ -81,6 +81,7 @@ erDiagram
     USERS ||--o{ CONTACTS : owns
     USERS ||--o{ CONVERSATION_PARTICIPANTS : participates
     USERS ||--o{ MESSAGES : sends
+    USERS ||--o{ MESSAGE_RECEIPTS : receives
     CONVERSATIONS ||--o{ CONVERSATION_PARTICIPANTS : contains
     CONVERSATIONS ||--o{ MESSAGES : stores
     MESSAGES ||--o{ MESSAGE_RECEIPTS : tracks
