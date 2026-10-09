@@ -31,7 +31,14 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       socketRef.current = null;
     }
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws";
+    const getWsUrl = () => {
+      if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+      const wsProtocol = apiUrl.startsWith("https") ? "wss://" : "ws://";
+      const host = apiUrl.replace(/^https?:\/\//, "").replace(/\/api\/?$/, "");
+      return `${wsProtocol}${host}/ws`;
+    };
+    const wsUrl = getWsUrl();
     const socket = new WebSocket(`${wsUrl}?token=${encodeURIComponent(token)}`);
 
     socket.onopen = () => {
