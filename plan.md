@@ -122,6 +122,7 @@ erDiagram
         string sender_id FK
         string text
         datetime created_at
+        boolean is_system
         boolean is_deleted
     }
 

@@ -40,7 +40,7 @@ def format_conversation_response(
     last_message_resp = None
     if last_msg:
         sender_resp = UserResponse.model_validate(last_msg.sender)
-        is_sys = last_msg.text.startswith("[SYS]")
+        is_sys = bool(last_msg.is_system) or last_msg.text.startswith("[SYS]")
         clean_text = last_msg.text.replace("[SYS]", "").strip() if is_sys else last_msg.text
         last_message_resp = MessageResponse(
             id=last_msg.id,

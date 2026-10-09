@@ -61,6 +61,7 @@ def create_group(
         conversation_id=new_group.id,
         sender_id=current_user.id,
         text=f"[SYS] 📌 {current_user.display_name} created group \"{new_group.title}\"",
+        is_system=True,
         created_at=now,
     )
     db.add(sys_msg)
@@ -138,6 +139,7 @@ def add_group_members(
             conversation_id=group.id,
             sender_id=current_user.id,
             text=f"[SYS] 📌 {current_user.display_name} added {names_str} to the group",
+            is_system=True,
             created_at=now,
         )
         db.add(sys_msg)
@@ -219,6 +221,7 @@ def remove_group_member(
         conversation_id=group.id,
         sender_id=current_user.id,
         text=sys_text,
+        is_system=True,
         created_at=now,
     )
     db.add(sys_msg)

@@ -101,6 +101,7 @@ class Message(Base):
     sender_id = Column(String, ForeignKey("users.id"), nullable=False)
     text = Column(Text, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    is_system = Column(Boolean, default=False)
     is_deleted = Column(Boolean, default=False)
 
     conversation = relationship("Conversation", back_populates="messages")
