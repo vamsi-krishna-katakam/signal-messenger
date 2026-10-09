@@ -190,14 +190,17 @@ export default function ChatPane() {
                 >
                   {/* Sender Avatar for Group Messages */}
                   {!isMe && activeConversation.type === "group" && (
-                    <img
-                      src={
-                        msg.sender?.avatar_url ||
-                        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
-                      }
-                      alt={msg.sender?.display_name}
-                      className="w-7 h-7 rounded-full object-cover mb-1 flex-shrink-0"
-                    />
+                    msg.sender?.avatar_url ? (
+                      <img
+                        src={msg.sender.avatar_url}
+                        alt={msg.sender?.display_name || "User"}
+                        className="w-7 h-7 rounded-full object-cover mb-1 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-[#2C6BED] text-white flex items-center justify-center font-semibold text-[10px] mb-1 flex-shrink-0">
+                        {getInitials(msg.sender?.display_name || "")}
+                      </div>
+                    )
                   )}
 
                   <div
