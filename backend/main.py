@@ -4,7 +4,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from jose import jwt, JWTError
 
-from database import SessionLocal
+from database import engine, Base, SessionLocal
 from models import User, Conversation, ConversationParticipant, Message, MessageReceipt
 from schemas import MessageResponse, UserResponse, MessageReceiptResponse
 from websocket_manager import manager
@@ -33,6 +33,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Auto-create tables in PostgreSQL / SQLite on app startup
+@app.on_event("startup")
+def startup_event():
+    Base.metadata.create_all(bind=engine)
 
 # Register REST Routers
 app.include_router(auth_router)
