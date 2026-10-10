@@ -116,10 +116,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Append to current messages if viewing this conversation (with deduplication check)
         if (currentActiveConv && currentActiveConv.id === newMsg.conversation_id) {
           setMessages((prevMsgs) => {
-            if (prevMsgs.some((m) => m.id === newMsg.id)) {
-              return prevMsgs; // Deduplicate
+            // Replace any optimistic message with actual server message
+            const filtered = prevMsgs.filter(
+              (m) => !(m.id.startsWith("temp-") && m.text === newMsg.text)
+            );
+            if (filtered.some((m) => m.id === newMsg.id)) {
+              return filtered; // Deduplicate
             }
-            return [...prevMsgs, newMsg];
+            return [...filtered, newMsg];
           });
 
           // Mark read if viewer is recipient
@@ -129,8 +133,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Update conversation list item last message & unread count
-        setConversations((prevConvs) =>
-          prevConvs.map((conv) => {
+        setConversations((prevConvs) => {
+          const convExists = prevConvs.some((c) => c.id === newMsg.conversation_id);
+          if (!convExists) {
+            // Fetch newly created conversation into recipient's sidebar
+            refreshConversations();
+            return prevConvs;
+          }
+          return prevConvs.map((conv) => {
             if (conv.id === newMsg.conversation_id) {
               const isCurrentChat = currentActiveConv?.id === newMsg.conversation_id;
               return {
@@ -141,8 +151,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
               };
             }
             return conv;
-          })
-        );
+          });
+        });
       }
 
       // EVENT: Typing status change
@@ -216,7 +226,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => unsubscribe();
-  }, [subscribe, markRead]);
+  }, [subscribe, markRead, refreshConversations]);
 
   // Handle typing debounce
   const handleTyping = useCallback(() => {
@@ -236,13 +246,39 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sendChatMessage = useCallback(
     (text: string) => {
       const currentActiveConv = activeConvRef.current;
-      if (!currentActiveConv || !text.trim()) return;
+      const currentUser = userRef.current;
+      if (!currentActiveConv || !currentUser || !text.trim()) return;
 
       // Stop typing status
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       sendTypingStop(currentActiveConv.id);
 
-      // Emit WS event
+      // Create optimistic message object for immediate UI display
+      const tempId = `temp-${Date.now()}`;
+      const optimisticMsg: Message = {
+        id: tempId,
+        conversation_id: currentActiveConv.id,
+        sender_id: currentUser.id,
+        sender: currentUser,
+        text: text.trim(),
+        created_at: new Date().toISOString(),
+        is_system: false,
+        receipts: [],
+      };
+
+      // Optimistically append message to local messages list
+      setMessages((prev) => [...prev, optimisticMsg]);
+
+      // Update sidebar last message snippet
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === currentActiveConv.id
+            ? { ...c, last_message: optimisticMsg, updated_at: optimisticMsg.created_at }
+            : c
+        )
+      );
+
+      // Emit WS event to server
       sendMessage(currentActiveConv.id, text.trim());
     },
     [sendMessage, sendTypingStop]
