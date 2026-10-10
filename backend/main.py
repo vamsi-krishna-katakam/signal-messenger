@@ -9,7 +9,6 @@ from models import User, Conversation, ConversationParticipant, Message, Message
 from schemas import MessageResponse, UserResponse, MessageReceiptResponse
 from websocket_manager import manager
 from auth import SECRET_KEY, ALGORITHM
-from seed import seed_database
 
 # Routers
 from routers.auth_router import router as auth_router
@@ -29,16 +28,11 @@ app = FastAPI(
 # Configure CORS for Next.js frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows local Next.js dev server (http://localhost:3000)
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Auto-create tables and seed demo data on app startup
-@app.on_event("startup")
-def startup_event():
-    seed_database()
 
 # Register REST Routers
 app.include_router(auth_router)
