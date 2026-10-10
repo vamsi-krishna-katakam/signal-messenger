@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -13,11 +13,11 @@ router = APIRouter(prefix="/api/messages", tags=["Messages"])
 @router.get("/conversation/{conversation_id}", response_model=List[MessageResponse])
 def get_messages(
     conversation_id: str,
-    limit: int = Query(50, le=100),
+    limit: Optional[int] = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Fetches message history for a conversation."""
+    """Fetches full message history for a conversation."""
     # Verify participation
     participant = (
         db.query(ConversationParticipant)
@@ -31,13 +31,15 @@ def get_messages(
     if not participant:
         raise HTTPException(status_code=403, detail="Not authorized to access messages in this chat")
 
-    messages = (
+    query = (
         db.query(Message)
         .filter(Message.conversation_id == conversation_id, Message.is_deleted == False)
         .order_by(Message.created_at.asc())
-        .limit(limit)
-        .all()
     )
+    if limit is not None:
+        query = query.limit(limit)
+
+    messages = query.all()
 
     result = []
     for msg in messages:
