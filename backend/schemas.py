@@ -65,11 +65,6 @@ class ContactResponse(BaseModel):
 
 
 # --- Message Schemas ---
-class MessageCreateRequest(BaseModel):
-    conversation_id: str
-    text: str
-
-
 class MessageReceiptResponse(BaseModel):
     user_id: str
     status: str
@@ -86,7 +81,6 @@ class MessageResponse(BaseModel):
     sender: UserResponse
     text: str
     created_at: datetime
-    is_system: bool = False
     receipts: List[MessageReceiptResponse] = []
 
     class Config:
