@@ -1,6 +1,5 @@
 import os
 import hashlib
-import hmac
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Depends, HTTPException, status
@@ -22,18 +21,6 @@ def get_password_hash(password: str) -> str:
     salt = os.urandom(16)
     key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
     return f"{salt.hex()}:{key.hex()}"
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verifies plain text password against hashed PBKDF2 string."""
-    try:
-        salt_hex, key_hex = hashed_password.split(":")
-        salt = bytes.fromhex(salt_hex)
-        expected_key = bytes.fromhex(key_hex)
-        key = hashlib.pbkdf2_hmac("sha256", plain_password.encode("utf-8"), salt, 100000)
-        return hmac.compare_digest(key, expected_key)
-    except Exception:
-        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
