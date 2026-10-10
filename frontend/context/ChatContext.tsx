@@ -251,16 +251,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Start or open 1-on-1 direct chat
   const startDirectChat = async (targetUserId: string) => {
     const conv = await api.getDirectConversation(targetUserId);
-    await refreshConversations();
+    setConversations((prev) => {
+      const exists = prev.some((c) => c.id === conv.id);
+      if (exists) {
+        return prev.map((c) => (c.id === conv.id ? conv : c));
+      }
+      return [conv, ...prev];
+    });
     selectConversation(conv);
+    refreshConversations();
     return conv;
   };
 
   // Create new group chat
   const createGroupChat = async (title: string, memberUserIds: string[]) => {
     const conv = await api.createGroup(title, memberUserIds);
-    await refreshConversations();
+    setConversations((prev) => [conv, ...prev]);
     selectConversation(conv);
+    refreshConversations();
     return conv;
   };
 

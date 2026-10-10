@@ -78,9 +78,25 @@ def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+from datetime import datetime, timezone
+from websocket_manager import manager
+
 @router.post("/logout")
-def logout(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def logout(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Logs out user and updates online status."""
     current_user.is_online = False
+    current_user.last_seen = datetime.now(timezone.utc)
     db.commit()
+
+    all_connected_users = list(manager.active_connections.keys())
+    await manager.broadcast_to_users(
+        all_connected_users,
+        {
+            "type": "user:status",
+            "payload": {
+                "user_id": current_user.id,
+                "is_online": False,
+            },
+        },
+    )
     return {"message": "Successfully logged out"}
