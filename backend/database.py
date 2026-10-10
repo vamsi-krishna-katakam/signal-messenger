@@ -11,10 +11,12 @@ if RAW_DATABASE_URL:
         DATABASE_URL = RAW_DATABASE_URL.replace("postgres://", "postgresql://", 1)
     else:
         DATABASE_URL = RAW_DATABASE_URL
+    print("✅ DATABASE_URL detected: Connecting to persistent PostgreSQL database.")
     engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=20, max_overflow=30)
 else:
     DB_PATH = os.path.join(os.path.dirname(__file__), "signal.db")
     DATABASE_URL = f"sqlite:///{DB_PATH}"
+    print("⚠️ WARNING: DATABASE_URL not set in Environment Variables! Falling back to temporary SQLite.")
     engine = create_engine(
         DATABASE_URL,
         connect_args={"check_same_thread": False},
