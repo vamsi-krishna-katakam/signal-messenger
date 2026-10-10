@@ -171,7 +171,10 @@ export default function ChatPane() {
               receiptIcon = <CheckCheck className="w-3.5 h-3.5 text-white/90" />;
             }
 
-            const isSystemMessage = Boolean(msg.is_system) || msg.text.startsWith("[SYS]");
+            const isSystemMessage =
+              Boolean(msg.is_system) ||
+              msg.text.startsWith("[SYS]") ||
+              msg.text.startsWith("📌");
 
             return (
               <React.Fragment key={msg.id}>
