@@ -78,7 +78,19 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoadingMessages(true);
       try {
         const msgs = await api.getMessages(conv.id);
-        setMessages(msgs);
+        setMessages((prevMsgs) => {
+          // Merge fetched HTTP history with any live WebSocket messages that arrived during load
+          const msgMap = new Map<string, Message>();
+          msgs.forEach((m) => msgMap.set(m.id, m));
+          prevMsgs.forEach((m) => {
+            if (m.conversation_id === conv.id && !msgMap.has(m.id)) {
+              msgMap.set(m.id, m);
+            }
+          });
+          return Array.from(msgMap.values()).sort(
+            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        });
 
         // Mark unread messages as read
         if (conv.unread_count > 0) {
