@@ -53,7 +53,8 @@ def root():
     return {
         "status": "online",
         "app": "Signal Messenger API",
-        "version": "1.0.0",
+        "version": "1.0.1",
+        "database": "persistent",
     }
 
 
