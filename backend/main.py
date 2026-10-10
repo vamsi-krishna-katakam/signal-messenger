@@ -1,11 +1,10 @@
 import json
 from datetime import datetime, timezone
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Query, HTTPException, status
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from jose import jwt, JWTError
-from sqlalchemy.orm import Session
 
-from database import engine, Base, get_db, SessionLocal
+from database import SessionLocal
 from models import User, Conversation, ConversationParticipant, Message, MessageReceipt
 from schemas import MessageResponse, UserResponse, MessageReceiptResponse
 from websocket_manager import manager
